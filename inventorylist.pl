@@ -1,9 +1,11 @@
-#!/usr/bin/env perl
+#!/usr/bin/env -S perl -I.
 
 # A perl script to show the contents of your inventory in a very nice layout.
 
 use strict;
 use warnings;
+
+use InfiniteNomic qw/@suitorder @rankorder %colors @regionorder %regions/;
 
 my $fh = undef;
 my $reg = undef;
@@ -26,76 +28,6 @@ while (my $fa = shift @ARGV) {
         open $fh, "<", $fa or die "Could not open file $fa";
     }
 }
-
-my @suitorder = (
-    'L',
-    'D',
-    'Cp',
-    'C',
-    'A',
-    'R',
-    'B',
-    'Sw',
-    'Sh',
-    'H',
-    'Cn',
-    'S'
-);
-
-my @rankorder = (
-    'A',
-    '2',
-    '3',
-    '4',
-    '5',
-    '6',
-    '7',
-    '8',
-    '9',
-    'T',
-    'E',
-    'D',
-    'H',
-    'U',
-    'O',
-    'N',
-    'B',
-    'R',
-    'Q',
-    'K',
-);
-
-my %colors = (
-    'L'  => '36',
-    'D'  => '31',
-    'Cp' => '33',
-    'C'  => '30',
-    'A'  => '36',
-    'R'  => '31',
-    'B'  => '33',
-    'Sw' => '30',
-    'Sh' => '36',
-    'H'  => '31',
-    'Cn' => '33',
-    'S'  => '30',
-);
-
-my @regionorder = ('fr', 'es', 'de', 'ch');
-
-my %regions = (
-    'L'  => {'de' => 1},
-    'D'  => {'fr' => 1},
-    'Cp' => {'es' => 1},
-    'C'  => {'fr' => 1, 'es' => 1},
-    'A'  => {'de' => 1, 'ch' => 1},
-    'R'  => {'ch' => 1},
-    'B'  => {'de' => 1, 'ch' => 1},
-    'Sw' => {'es' => 1},
-    'Sh' => {'ch' => 1},
-    'H'  => {'de' => 1, 'fr' => 1},
-    'Cn' => {'es' => 1},
-    'S'  => {'fr' => 1},
-);
 
 @suitorder = grep { $regions{$_}->{$reg} } @suitorder if $reg;
 @suitorder = grep { $colors{$_} eq $col } @suitorder if $col;
