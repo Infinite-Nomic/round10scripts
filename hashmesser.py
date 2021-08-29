@@ -17,9 +17,9 @@ def get_sha_256(string):
 
 
 def mess(msg, placeholder, check):
-    '''Msg should include the placeholder string "{}"'''
+    '''Msg should include the placeholder string'''
 
-    if '{}' not in msg:
+    if placeholder not in msg:
         return "No placeholder string."
 
     left, right = msg.split(placeholder)
