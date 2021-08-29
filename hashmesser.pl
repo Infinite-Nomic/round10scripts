@@ -26,7 +26,7 @@ if (@ARGV >= 2) {
         $modearg = "[[:alpha:]]";
     } elsif ($m eq '-rnum') {
         $mode = MODE_REPEATED;
-        $modearg = "[1-9]";
+        $modearg = "[0-9]";
     } elsif ($m eq '-match') {
         $mode = MODE_MATCH;
         $modearg = shift @ARGV;
@@ -38,7 +38,7 @@ if (@ARGV >= 2) {
         $modearg = "[[:alpha:]]";
     } elsif ($m eq '-tnum') {
         $mode = MODE_TOTAL;
-        $modearg = "[1-9]";
+        $modearg = "[0-9]";
     } elsif ($m eq '-s') {
         $mode = MODE_SEQ;
         $modearg = shift @ARGV;
@@ -47,15 +47,24 @@ if (@ARGV >= 2) {
         $modearg = "[[:alpha:]]";
     } elsif ($m eq '-snum') {
         $mode = MODE_SEQ;
-        $modearg = "[1-9]";
+        $modearg = "[0-9]";
     } else {
         die "no such mode"
     }
 }
 
+my $template;
+
 my $in = shift @ARGV or die "expected text";
 
-$in .= ' ';
+{
+    open my $temph, "<", "files/hmtemplate.txt" or die "can't load template";
+    local $/;
+    $template = <$temph>;
+    $template =~ s/(.+)\s$/$1/;
+    $template =~ s/{text}/$in/;
+    close $temph;
+}
 
 my $numtobeat = 0;
 
@@ -76,8 +85,11 @@ sub base95 ($) {
     $out
 }
 
+open my $outh, ">", "files/hmout.txt" or die "cannot open out file";
+
 for (my $idx = 0;; $idx++) {
-    my $in2 = $in . base95 $idx;
+    my $salt = base95 $idx;
+    my $in2 = $template =~ s/{salt}/$salt/r;
     my $digest = sha256_hex $in2;
 
     my $lastchar;
@@ -85,7 +97,7 @@ for (my $idx = 0;; $idx++) {
 
     if ($mode == MODE_MATCH) {
         if ($digest =~ /$modearg/) {
-            print "$digest '$in2'\n";
+            print "$numtobeat: $digest ($idx)\n$in2\n";
         } 
         next;
     }
@@ -99,7 +111,7 @@ for (my $idx = 0;; $idx++) {
             $blen = $sslen;
             $numtobeat = $blen if ($blen > $numtobeat);
 
-            print "$numtobeat: $digest '$in2'\n";
+            print "$numtobeat: $digest ($idx)\n$in2\n";
         }
 
         next;
@@ -118,10 +130,9 @@ for (my $idx = 0;; $idx++) {
 
         if ($sslen >= $blen) {
             $blen = $sslen;
-
             $numtobeat = $blen if ($blen > $numtobeat);
             
-            print "$numtobeat: $digest '$in2'\n";
+            print "$numtobeat: $digest ($idx)\n$in2\n";
         }
 
         $lastchar = $_;
