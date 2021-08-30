@@ -8,6 +8,7 @@ CB = Tk()
 print("1 Tax  2 Sort")
 whichprogram = input()
 if int(whichprogram) == 1:
+    # grabs table data from clipboard, will crash if you dont have table data in it though bc im an expert programmer
     clipboardData = CB.clipboard_get()
     clipboardList = clipboardData.splitlines()
     listClean = [x for x in clipboardList if x != "|-"]
@@ -15,7 +16,7 @@ if int(whichprogram) == 1:
 
     for x in listClean:
         slicePoint = re.search("(\|\|)", x).span()
-        print(slicePoint)
+        # print(slicePoint)
         if slicePoint[0] - 1 > longestName:
             longestName = slicePoint[0] - 3
 
@@ -31,19 +32,18 @@ if int(whichprogram) == 1:
         taxValue = 0
 
         def Buffer(value):
-            buff = " " * (3 - len(str(value)))
-            return buff
+            buff = " " * (4 - len(str(value)))
+            return str(value) + buff + "| "
 
-        if WealthValue >= 320:
+        if WealthValue >= 320: #the first tax increment kicks in at 320 currently
             taxValue = math.floor(((TrungValue * 20) + ChipValue - 300) / 20) * 5
-            if taxValue >= 100:
+            if taxValue >= 100: # the hardcap on tax is 100 currently
                 taxValue = 100
 
         while len(playerName) < longestName:
             playerName += " "
 
-        print(playerName + " | Wealth: " + str(WealthValue) + Buffer(WealthValue) + " | Chips: " + str(
-            ChipValue) + Buffer(ChipValue) +" | Trungs: " + str(TrungValue) + Buffer(TrungValue) + " | Tax: " + str(taxValue) + Buffer(taxValue) + " | Gain: " + str(
+        print(playerName + " | Wealth: " + Buffer(WealthValue) + "Chips: " + Buffer(ChipValue) + "Trungs: " + Buffer(TrungValue) + "Tax: " + Buffer(taxValue) + "Gain: " + str(
             100 - taxValue))
 
 elif int(whichprogram) == 2:
@@ -112,6 +112,7 @@ elif int(whichprogram) == 2:
         22: "The World "
     }
 
+    #this one requires you paste it and i have no idea why since i lit have clipboard shit earlier?? need to fix
     carddetails = input("Paste suit/rank/tarot ranks with the sets separated by |\n").split("|")
 
     suits = deque([suitdict[int(x.strip("[").strip().strip("]"))] for x in carddetails[0].split(",")])
@@ -125,7 +126,6 @@ elif int(whichprogram) == 2:
             assembledCards.append(tarotranks.popleft() + "[" + suits.popleft() +"]")
         else:
             assembledCards.append(regularranks.popleft() + " of " + suits.popleft())
-    print(assembledCards)
 
-    for x, value in enumerate(range(len(assembledCards))):
-        print("Lot " + str(value+1) + ": " + assembledCards.popleft() + ",",assembledCards.popleft() + ","  + assembledCards.popleft())
+    for x, value in enumerate(range(int(len(assembledCards)/3))):
+        print("Lot " + str(value+1) + ": " + assembledCards.popleft() + ", " + assembledCards.popleft() + ", "  + assembledCards.popleft())
