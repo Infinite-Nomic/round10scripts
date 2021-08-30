@@ -1,10 +1,11 @@
 import math
 from tkinter import *
+from collections import deque
 import re
 
 CB = Tk()
 
-print("1.Tax  2.Sort")
+print("1 Tax  2 Sort")
 whichprogram = input()
 if int(whichprogram) == 1:
     clipboardData = CB.clipboard_get()
@@ -27,44 +28,25 @@ if int(whichprogram) == 1:
 
         playerName = x[2:slicePoint[0] - 1]
 
-        taxBuffer = ""
-        wealthBuffer = ""
-        trungBuffer = ""
-        chipBuffer = ""
+        taxValue = 0
+
+        def Buffer(value):
+            buff = " " * (3 - len(str(value)))
+            return buff
 
         if WealthValue >= 320:
             taxValue = math.floor(((TrungValue * 20) + ChipValue - 300) / 20) * 5
-        else:
-            taxValue = 0
-
-        if taxValue >= 100:
-            taxValue = 100
-        elif taxValue > 9:
-            taxBuffer = " "
-        else:
-            taxBuffer = "  "
-
-        if WealthValue < 10:
-            wealthBuffer = "  "
-        elif WealthValue < 100:
-            wealthBuffer = " "
+            if taxValue >= 100:
+                taxValue = 100
 
         while len(playerName) < longestName:
             playerName += " "
 
-        print(playerName + " | Wealth: " + str(WealthValue) + wealthBuffer + " | Chips: " + str(
-            ChipValue) + " | Trungs: " + str(TrungValue) + " | Tax: " + str(taxValue) + taxBuffer + " | Gain: " + str(
+        print(playerName + " | Wealth: " + str(WealthValue) + Buffer(WealthValue) + " | Chips: " + str(
+            ChipValue) + Buffer(ChipValue) +" | Trungs: " + str(TrungValue) + Buffer(TrungValue) + " | Tax: " + str(taxValue) + Buffer(taxValue) + " | Gain: " + str(
             100 - taxValue))
-elif int(whichprogram) == 2:
-    carddetails = input("Paste suit/rank/tarot ranks with the sets separated by |\n").split("|")
-    suits = [x.strip("[").strip().strip("]") for x in carddetails[0].split(",")]
-    regularranks = [y.strip().strip("]").strip("[") for y in carddetails[1].split(",")]
-    tarotranks = [z.strip().strip("]").strip("[") for z in carddetails[2].split(",")]
 
-    regrankplace = 0
-    tarotrankplace = 0
-    cardSuitandRank = []
-    readableCard = []
+elif int(whichprogram) == 2:
 
     suitdict = {
         1: "Leaves",
@@ -130,25 +112,20 @@ elif int(whichprogram) == 2:
         22: "The World "
     }
 
-    for x in suits:
-        if int(x) != 13:
-            cardSuitandRank.append(x + " " + regularranks[regrankplace])
-            readableCard.append("[" + rankdict[int(regularranks[regrankplace])] + "] " + suitdict[int(x)])
-            regrankplace += 1
-        else:
-            cardSuitandRank.append(x + " " + tarotranks[tarotrankplace])
-            readableCard.append("[" + tarotdict[int(tarotranks[tarotrankplace])] + "] " + suitdict[int(x)])
-            tarotrankplace += 1
+    carddetails = input("Paste suit/rank/tarot ranks with the sets separated by |\n").split("|")
 
-    lotdivider = 2
-    lotnumber = 1
-    # this should be enumerate i think
-    for x in readableCard:
-        if lotdivider == 2:
-            print("\nLot " + str(lotnumber) + ":\n" + x)
-            lotdivider = 0
-            lotnumber += 1
+    suits = deque([suitdict[int(x.strip("[").strip().strip("]"))] for x in carddetails[0].split(",")])
+    regularranks = deque([rankdict[int(y.strip().strip("]").strip("["))] for y in carddetails[1].split(",")])
+    tarotranks = deque([tarotdict[int(z.strip().strip("]").strip("["))] for z in carddetails[2].split(",")])
 
+    assembledCards = deque([])
+
+    while len(suits) > 0:
+        if suits[0] == "Tarot":
+            assembledCards.append(tarotranks.popleft() + "[" + suits.popleft() +"]")
         else:
-            print(x)
-            lotdivider += 1
+            assembledCards.append(regularranks.popleft() + " of " + suits.popleft())
+    print(assembledCards)
+
+    for x, value in enumerate(range(len(assembledCards))):
+        print("Lot " + str(value+1) + ": " + assembledCards.popleft() + ",",assembledCards.popleft() + ","  + assembledCards.popleft())
