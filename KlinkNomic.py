@@ -43,8 +43,8 @@ if int(whichprogram) == 1:
             if TaxValue >= 100: # the hardcap on tax is 100 currently
                 TaxValue = 100
 
-        while len(PlayerName) < longestName:
-            PlayerName += " "
+        if len(PlayerName) < longestName:
+            PlayerName += " " * (longestName - len(PlayerName))
 
         print(PlayerName + " | Wealth: " + Buffer(WealthValue) + "Chips: " + Buffer(ChipValue) + "Trungs: " + Buffer(TrungValue) + "Tax: " + Buffer(TaxValue) + "Gain: " + str(
             100 - TaxValue))
