@@ -24,7 +24,10 @@ if int(whichprogram) == 1:
         slicePoint = re.search("(\|\|).*?(\|\|)", x).span()
 
         ChipValue = int(x[slicePoint[0] + 3:slicePoint[1] - 3])
-        TrungValue = 0  # placeholder
+        TrungValue = 0;
+        TrungMatch = re.search("(\d+) Trung", x)
+        if TrungMatch != None:
+            TrungValue = int(TrungMatch.group(1))
         WealthValue = ChipValue + (TrungValue * 20)
 
         playerName = x[2:slicePoint[0] - 1]
