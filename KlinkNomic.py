@@ -14,40 +14,40 @@ if int(whichprogram) == 1:
     listClean = [x for x in clipboardList if x != "|-"]
     longestName = 0
 
-    for x in listClean:
-        slicePoint = re.search("(\|\|)", x).span()
-        # print(slicePoint)
-        if slicePoint[0] - 1 > longestName:
-            longestName = slicePoint[0] - 3
+    def cleanInventory(unclean):
+        split = unclean.split("||")
+        clean =[y.strip("|").strip() for y in split]
+        return  clean
 
     for x in listClean:
-        slicePoint = re.search("(\|\|).*?(\|\|)", x).span()
+        name = cleanInventory(x)[0]
+        if len(name) > longestName: longestName = len(name)
 
-        ChipValue = int(x[slicePoint[0] + 3:slicePoint[1] - 3])
-        TrungValue = 0;
-        TrungMatch = re.search("(\d+) Trung", x)
+    for x in listClean:
+        InvClean = cleanInventory(x)
+        PlayerName = InvClean[0]
+        ChipValue = int(InvClean[1])
+        TaxValue = 0
+        TrungValue = 0  # placeholder
+        TrungMatch = re.search("(\d+) Trung", InvClean[2])
         if TrungMatch != None:
             TrungValue = int(TrungMatch.group(1))
         WealthValue = ChipValue + (TrungValue * 20)
-
-        playerName = x[2:slicePoint[0] - 1]
-
-        taxValue = 0
 
         def Buffer(value):
             buff = " " * (4 - len(str(value)))
             return str(value) + buff + "| "
 
         if WealthValue >= 320: #the first tax increment kicks in at 320 currently
-            taxValue = math.floor(((TrungValue * 20) + ChipValue - 300) / 20) * 5
-            if taxValue >= 100: # the hardcap on tax is 100 currently
-                taxValue = 100
+            TaxValue = math.floor(((TrungValue * 20) + ChipValue - 300) / 20) * 5
+            if TaxValue >= 100: # the hardcap on tax is 100 currently
+                TaxValue = 100
 
-        while len(playerName) < longestName:
-            playerName += " "
+        while len(PlayerName) < longestName:
+            PlayerName += " "
 
-        print(playerName + " | Wealth: " + Buffer(WealthValue) + "Chips: " + Buffer(ChipValue) + "Trungs: " + Buffer(TrungValue) + "Tax: " + Buffer(taxValue) + "Gain: " + str(
-            100 - taxValue))
+        print(PlayerName + " | Wealth: " + Buffer(WealthValue) + "Chips: " + Buffer(ChipValue) + "Trungs: " + Buffer(TrungValue) + "Tax: " + Buffer(TaxValue) + "Gain: " + str(
+            100 - TaxValue))
 
 elif int(whichprogram) == 2:
 
