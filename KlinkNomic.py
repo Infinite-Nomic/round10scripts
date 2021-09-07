@@ -26,6 +26,7 @@ if int(whichprogram) == 1:
     for x in listClean:
         InvClean = cleanInventory(x)
         PlayerName = InvClean[0]
+        NameBuffer = " "
         ChipValue = int(InvClean[1])
         TaxValue = 0
         TrungValue = 0  # placeholder
@@ -36,7 +37,7 @@ if int(whichprogram) == 1:
 
         def Buffer(value):
             buff = " " * (4 - len(str(value)))
-            return str(value) + buff + "| "
+            return " " + str(value) + buff + "| "
 
         if WealthValue >= 320: #the first tax increment kicks in at 320 currently
             TaxValue = math.floor(((TrungValue * 20) + ChipValue - 300) / 20) * 5
@@ -44,10 +45,9 @@ if int(whichprogram) == 1:
                 TaxValue = 100
 
         if len(PlayerName) < longestName:
-            PlayerName += " " * (longestName - len(PlayerName))
+            NameBuffer = " " * (1+longestName - len(PlayerName))
 
-        print(PlayerName + " | Wealth: " + Buffer(WealthValue) + "Chips: " + Buffer(ChipValue) + "Trungs: " + Buffer(TrungValue) + "Tax: " + Buffer(TaxValue) + "Gain: " + str(
-            100 - TaxValue))
+        print(PlayerName + NameBuffer + "| Wealth:" + Buffer(WealthValue) + "Chips:" + Buffer(ChipValue) + "Trungs:" + Buffer(TrungValue) + "Tax:" + Buffer(TaxValue) + "Gain:" + Buffer(100 - TaxValue))
 
 elif int(whichprogram) == 2:
 
@@ -93,26 +93,26 @@ elif int(whichprogram) == 2:
     tarotdict = {
         1: "The Fool",
         2: "The Magician",
-        3: "The High Priestess ",
-        4: "The Empress ",
-        5: "The Emperor ",
-        6: "The Hierophant ",
-        7: "The Lovers ",
-        8: "The Chariot ",
+        3: "The High Priestess",
+        4: "The Empress",
+        5: "The Emperor",
+        6: "The Hierophant",
+        7: "The Lovers",
+        8: "The Chariot",
         9: "Justice",
-        10: "The Hermit ",
-        11: "Wheel of Fortune ",
+        10: "The Hermit",
+        11: "Wheel of Fortune",
         12: "Strength",
-        13: "The Hanged Man ",
+        13: "The Hanged Man",
         14: "Death",
         15: "Temperance",
-        16: "The Devil ",
-        17: "The Tower ",
-        18: "The Star ",
-        19: "The Moon ",
-        20: "The Sun ",
-        21: "Judgement ",
-        22: "The World "
+        16: "The Devil",
+        17: "The Tower",
+        18: "The Star",
+        19: "The Moon",
+        20: "The Sun",
+        21: "Judgement",
+        22: "The World"
     }
 
     #this one requires you paste it and i have no idea why since i lit have clipboard shit earlier?? need to fix
