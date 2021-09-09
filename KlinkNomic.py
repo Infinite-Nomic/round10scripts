@@ -1,11 +1,11 @@
 import math
-from tkinter import *
 from collections import deque
+if __name__ == '__main__':
+    from tkinter import *
+    CB = Tk()
+    CB.withdraw()
+
 import re
-
-CB = Tk()
-CB.withdraw()
-
 
 class PlayingCard:
     def __init__(self):
@@ -30,6 +30,7 @@ class PlayingCard:
         "Cn": 11,
         "S": 12
     }
+    invsuit_alpha = {v: k for k, v in suit_alpha.items()}
 
     rank_alpha =   {
         "A": 1,
@@ -45,6 +46,7 @@ class PlayingCard:
         "Q": 19,
         "K": 20
     }
+    invrank_alpha = {v: k for k, v in rank_alpha.items()}
 
     card_suits = {
         1: "Leaves",
@@ -162,6 +164,8 @@ class TarotCard:
         21: "Judgement",
         22: "The World"
     }
+    invtarot_ranks = {v: k for k, v in tarot_ranks.items()}
+
     def __init__(self):
         self.ranknum = ""
         self.rank = ""
@@ -169,12 +173,14 @@ class TarotCard:
         self.rank = self.tarot_ranks[int(self.ranknum)]
 
 def testfunction():
-    pass
+    print(PlayingCard.invrank_alpha[28])
 
-def createplayerlist():
-    clipboardData = CB.clipboard_get()
-    clipboardList = clipboardData.splitlines()
-    playerlist = [x for x in clipboardList if x != "|-"]
+def clipboard():
+    return CB.clipboard_get()
+
+def createplayerlist(rawdata):
+    rawList = rawdata.splitlines()
+    playerlist = [x for x in rawList if x != "|-"]
     return playerlist
 
 def cleaninventory(unclean):
@@ -182,7 +188,7 @@ def cleaninventory(unclean):
     clean = [y.strip("|").strip() for y in split]
     return clean
 
-def processtaxes():
+def processtaxes(rawdata):
     #make sure the wiki table is in your clipboard starting with the first player
     print("1: All Players | 2: Players with tax < 100")
     whichmode = input()
@@ -191,7 +197,7 @@ def processtaxes():
     except ValueError:
         whichmode = 1
 
-    listClean = createplayerlist()
+    listClean = createplayerlist(rawdata)
     longestName = 0
     if len(listClean) <= 1:
         print("Make sure you have the wiki table in your clipboard")
@@ -231,13 +237,12 @@ def processtaxes():
         elif int(whichmode) == 2 and TaxValue < 100:
             print(PlayerName + NameBuffer + "| New Chips:" + buffer(NewChipValue) + "Wealth:" + buffer(WealthValue) + "Chips:" + buffer(
                 ChipValue) + "Trungs:" + buffer(TrungValue) + "Tax:" + buffer(TaxValue) + "Gain:" + buffer(100 - TaxValue))
-    input("Press any key to close")
 
-def processdiceroles():
+def processdiceroles(rawdata):
 
     #Separate the three sets of rolls with | and copy it into your clipboard
-    clipboardData = CB.clipboard_get()
-    carddetails = clipboardData.split("|")
+    rawdicerolls = rawdata
+    carddetails = rawdicerolls.split("|")
     suits = deque([PlayingCard.card_suits[int(x.strip("[").strip().strip("]"))] for x in carddetails[0].split(",")])
     regularranks = deque([PlayingCard.card_ranks[int(y.strip().strip("]").strip("["))] for y in carddetails[1].split(",")])
     tarotranks = deque([TarotCard.tarot_ranks[int(z.strip().strip("]").strip("["))] for z in carddetails[2].split(",")])
@@ -253,19 +258,52 @@ def processdiceroles():
     for x, value in enumerate(range(int(len(assembledCards) / 3))):
         print("Lot " + str(
             value + 1) + ": " + assembledCards.popleft() + ", " + assembledCards.popleft() + ", " + assembledCards.popleft())
-    input("Press any button to exit")
 
-def processhand():
-    GetPlayers = createplayerlist()
 
-    print("1: Sort by Rank | 2: Sort by Suit | 3: Sort by Color | 4: Sort by Tradition")
-    whichsort = input()
+
+def preprocess(rawdata):
+    print("1: Sort by Rank | 2: Sort by Suit | 3: Sort by Color | 4: Sort by Tradition |  ! after num to output wiki "
+          "format")
+    rawinput = input()
+    whichsort = rawinput[0]
+
     try:
         whichsort = int(whichsort)
     except ValueError:
         whichsort = 1
 
+    try:
+        outputformat = rawinput[1]
+    except ValueError:
+        outputformat = None
+    except IndexError:
+        outputformat = None
 
+    processhand(rawdata,whichsort,outputformat)
+
+
+def processhand(rawdata,sortstyle,outputformat):
+    GetPlayers = createplayerlist(rawdata)
+
+    #
+    # print("1: Sort by Rank | 2: Sort by Suit | 3: Sort by Color | 4: Sort by Tradition |  ! after num to output wiki "
+    #       "format")
+    # rawinput = input()
+    # whichsort = rawinput[0]
+    #
+    # try:
+    #     whichsort = int(whichsort)
+    # except ValueError:
+    #     whichsort = 1
+    #
+    # try:
+    #     outputformat = rawinput[1]
+    # except ValueError:
+    #     outputformat = None
+    # except IndexError:
+    #     outputformat = None
+
+    
     for x in GetPlayers:
         CurrentPlayer = cleaninventory(x)
         def sortby():
@@ -286,58 +324,90 @@ def processhand():
                     TarotSleeve[-1].ranknum = B[6:]
                     TarotSleeve[-1].interpret()
 
-            if whichsort == 1:
+            if sortstyle == 1:
                 HandDetails.sort(key=lambda x: x.suitnum)
                 HandDetails.sort(key=lambda x: x.ranknum)
-            elif whichsort == 2:
+            elif sortstyle == 2:
                 HandDetails.sort(key=lambda x: x.ranknum)
                 HandDetails.sort(key=lambda x: x.suitnum)
-            elif whichsort == 3:
+            elif sortstyle == 3:
+                # Make this add color to the final display
                 HandDetails.sort(key=lambda x: x.ranknum)
                 HandDetails.sort(key=lambda x: x.color)
-            elif whichsort == 4:
+            elif sortstyle == 4:
+                # Make this add tradition to the final display
                 HandDetails.sort(key=lambda x: x.ranknum)
                 HandDetails.sort(key=lambda x: x.tradition)
 
-            HandPrint = CurrentPlayer[0] + ": "
+            if outputformat == None:
+                HandPrint = CurrentPlayer[0] + ": "
+            elif outputformat == "!":
+                HandPrint = "|-\n| " + CurrentPlayer[0] + " || " + CurrentPlayer[1] + " || " + CurrentPlayer[2] + " || "
+
+
             for x in HandDetails:
                 # add ability to print wiki formatted for rank / suit
-                HandPrint += x.rank + " " + x.suit
-                if whichsort == 3:
-                    HandPrint += " [" + x.color + "]"
-                elif whichsort == 4:
-                    HandPrint += + " [" + x.tradition + "]"
-                HandPrint += ", "
+                if outputformat == None:
+                    HandPrint += x.rank + " " + x.suit
+                    if sortstyle == 3:
+                        HandPrint += " [" + x.color + "]"
+                    elif sortstyle == 4:
+                        HandPrint += " [" + str(x.tradition) + "]"
+                    HandPrint += ", "
+                elif outputformat == "!":
+                    HandPrint += "{{Card|"
+                    try:
+                        RankText = PlayingCard.invrank_alpha[x.ranknum]
+                    except KeyError:
+                        RankText = str(x.ranknum)
+                    HandPrint += RankText + "|"
+                    try:
+                        SuitText = PlayingCard.invsuit_alpha[x.suitnum]
+                    except KeyError:
+                        SuitText = "Error, sorry :("
+                    HandPrint += SuitText + "}} "
+
 
             if len(TarotSleeve) > 0:
-                HandPrint += "Tarot Cards: "
-                for x in TarotSleeve:
-                    HandPrint += "[" + x.rank + "]"
+                if outputformat == None:
+                    HandPrint += "Tarot Cards: "
+                for z in TarotSleeve:
+                    if outputformat == None:
+                        HandPrint += "[" + z.rank + "]"
+                    elif outputformat == "!":
+                        HandPrint += "{{Tarot|"
+                        TarotText = z.ranknum
+                        HandPrint += TarotText + "}} "
 
             print(HandPrint)
+
         try:
             if CurrentPlayer[3] != "-":
                 sortby()
         except IndexError:
             print("Make sure you copy the wiki table")
             return
-    input("Press any key to close")
 
-while True:
-    print("1: Tax | 2: Sort | 3: Hand")
-    whichprogram = input()
-    try:
-        int(whichprogram)
-    except ValueError:
-        whichprogram = 0
+if __name__ == '__main__':
+    while True:
+        print("1: Tax | 2: Sort | 3: Hand")
+        whichprogram = input()
+        try:
+            int(whichprogram)
+        except ValueError:
+            whichprogram = 0
 
-    if int(whichprogram) == 1:
-        processtaxes()
-    elif int(whichprogram) == 2:
-        processdiceroles()
-    elif int(whichprogram) == 3:
-        processhand()
-    elif int(whichprogram) == 4:
-        testfunction()
-    else:
-        print("Thats not an option")
+        if int(whichprogram) == 1:
+            processtaxes(clipboard())
+            input()
+        elif int(whichprogram) == 2:
+            processdiceroles(clipboard())
+            input()
+        elif int(whichprogram) == 3:
+            preprocess(clipboard())
+            input()
+        elif int(whichprogram) == 4:
+            testfunction()
+            input()
+        else:
+            print("Thats not an option")
