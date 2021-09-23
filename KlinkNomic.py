@@ -159,6 +159,23 @@ card_traditions = {
 }
 
 
+class Contract:
+    list_of_contracts = []
+
+    def __init__(self, name, trungs=0, chips=0, players=None, link=""):
+        self.name = name
+        self.trungs = trungs
+        self.chips = chips
+        self.wealth = 0
+        self.players_party_to = players
+        self.wealth_per = 0
+        self.link = link
+
+    def wealth_per_player(self):
+        self.wealth = self.chips + (self.trungs * 20)
+        self.wealth_per = self.wealth / len(self.players_party_to)
+
+
 class PlayingCard:
     def __init__(self):
         self.suit_num = 0
@@ -229,39 +246,57 @@ class Player:
 
 
 # Uses playwright to get the table info from the wiki
-def grab_table():
+def grab_table(url="https://infinitenomic.miraheze.org/w/index.php?title=Round_10/Gamestate&action=edit&section=5"):
     with sync_playwright() as p:
         browser = p.chromium.launch()
         page = browser.new_page()
-        page.goto("https://infinitenomic.miraheze.org/w/index.php?title=Round_10/Gamestate&action=edit&section=5")
+        page.goto(url)
         hold_table = str(page.inner_html("id=wpTextbox1"))
         browser.close()
         return hold_table
 
 
 def test_function():
-    process_taxes(grab_table())
+    pass
+
+
+def populate_contracts():
+    raw_contracts = grab_table("https://infinitenomic.miraheze.org/w/index.php?title=Round_10/Gamestate&action=edit"
+                               "&section=3").splitlines()
+
+    split_contracts = [x.strip("|").strip() for x in raw_contracts if x != "|-"
+                       and x != ''
+                       and x != '== Players =='
+                       and x != '{| class="wikitable"'
+                       and x != "== Contracts =="
+                       and x != "|}"
+                       and x != "! Summary of Stakes !! Players involved !! Items !! Link to contract"]
+    for x in split_contracts:
+        contract_holder = x.split("||")
+        contract_name = contract_holder[0]
+        contract_players = contract_holder[1].split(",")
+
+        chip_match = re.search(r'(\d+) Chip', contract_holder[2], re.IGNORECASE)
+        if chip_match is not None:
+            contract_chips = int(chip_match.group(1))
+        else:
+            contract_chips = 0
+
+        trung_match = re.search(r'(\d+) Trung', contract_holder[2], re.IGNORECASE)
+
+        if trung_match is not None:
+            contract_trungs = int(trung_match.group(1))
+        else:
+            contract_trungs = 0
+        Contract.list_of_contracts.append(Contract(contract_name, contract_trungs, contract_chips, contract_players))
+        Contract.list_of_contracts[-1].wealth_per_player()
+
+        Contract.list_of_contracts[-1].players_party_to = [x.strip() for x in
+                                                           Contract.list_of_contracts[-1].players_party_to]
 
 
 def clipboard():
     return CB.clipboard_get()
-
-
-def process_raw_table_data(raw_data):
-    raw_list = raw_data.splitlines()
-    player_list = [x for x in raw_list if x != '|-'
-                   and x != ''
-                   and x != '== Players =='
-                   and x != '{| class="wikitable sortable"'
-                   and x != "|}"
-                   and x != '! Player !! Chips !! Inventory !! Cards']
-    return player_list
-
-
-def clean_inventory(unprocessed_player_data):
-    split = unprocessed_player_data.split("||")
-    clean = [y.strip("|").strip() for y in split]
-    return clean
 
 
 def populate_players(raw_data):
@@ -273,6 +308,11 @@ def populate_players(raw_data):
                            and x != '{| class="wikitable sortable"'
                            and x != "|}"
                            and x != '! Player !! Chips !! Inventory !! Cards']
+
+    def clean_inventory(unprocessed_player_data):
+        split = unprocessed_player_data.split("||")
+        clean = [y.strip("|").strip() for y in split]
+        return clean
 
     for x in list_of_inventories:
         current_player = Player()  # create player object and fill out what they own
@@ -287,7 +327,7 @@ def populate_players(raw_data):
         else:
             current_player.chips = int(current_inventory[1])
         current_player.misc_inv = current_inventory[2]
-        trung_match = re.search('(\d+) Trung', current_inventory[2])
+        trung_match = re.search(r'(\d+) Trung', current_inventory[2])
         if trung_match is not None:
             current_player.trungs = int(trung_match.group(1))
         else:
@@ -304,6 +344,9 @@ def process_taxes(raw_data):
     # make sure the wiki table is in your clipboard if you're not using the wiki
     if not Player.list_of_players:
         populate_players(raw_data)
+
+    if not Contract.list_of_contracts:
+        populate_contracts()
 
     player_inventories = Player.list_of_players
 
@@ -322,13 +365,21 @@ def process_taxes(raw_data):
         return " " + str(value) + buff + "| "
 
     for player in player_inventories:
-        wealth_value2 = player.chips + (player.trungs * 20)
+        contract_wealth = 0
+
+        for contract in Contract.list_of_contracts:
+            for players in contract.players_party_to:
+                if player.name.lower() == players.lower():
+                    contract_wealth = int(contract.wealth_per)
+
+        wealth_value2 = player.chips + (player.trungs * 20) + contract_wealth
 
         if wealth_value2 >= 320:
             tax_value = math.floor(((player.trungs * 20) + player.chips - 300) / 20) * 5
-
             if tax_value > 100:
                 tax_value = 100
+        else:
+            tax_value = 0
 
         new_chip_value = player.chips + (100 - tax_value)
 
@@ -337,10 +388,11 @@ def process_taxes(raw_data):
 
         def print_inventory():
             print(player.name + name_buffer
-                  + "| New Chips:" + buffer(new_chip_value)
-                  + "Wealth:" + buffer(wealth_value2)
-                  + "Chips:" + buffer(player.chips)
-                  + "Trungs:" + buffer(player.trungs)
+                  + "| NewChp:" + buffer(new_chip_value)
+                  + "Wlth:" + buffer(wealth_value2)
+                  + "Chp:" + buffer(player.chips)
+                  + "Trng:" + buffer(player.trungs)
+                  + "Cntrct Wlth:" + buffer(contract_wealth)
                   + "Tax:" + buffer(tax_value)
                   + "Gain:" + buffer(100 - tax_value))
 
@@ -386,7 +438,6 @@ def preprocess(raw_data):
     raw_input = input()
     format_for_wiki = False
     all_users = True
-    which_sort = 0
 
     if len(raw_input) == 1:
         which_sort = raw_input
@@ -402,7 +453,7 @@ def preprocess(raw_data):
         which_sort = 1
 
     try:
-        int(which_sort)
+        which_sort = int(which_sort)
     except ValueError:
         print("ValueError: Defaulting to Rank sort")
         which_sort = 1
@@ -446,7 +497,7 @@ def process_hand(sort_style, wiki_formatted, all_users):
 
         specific_players = input_holder.split(",")
         for y in specific_players:
-            selected_players.append(GetPlayers[int(y)-1])
+            selected_players.append(GetPlayers[int(y) - 1])
         GetPlayers = selected_players
 
     for player_holder in GetPlayers:
@@ -485,51 +536,36 @@ def process_hand(sort_style, wiki_formatted, all_users):
             # Controls if the output is human readable or wiki format
             if wiki_formatted is False:
                 hand_print = player_holder.name + ": "
+                hand_string = ""
+                for card_text in HandDetails:
+                    hand_string += card_text.rank + " of " + card_text.suit + ", "
+                if hand_string == "":
+                    hand_string = " - "
+                hand_print += hand_string
+
             elif wiki_formatted is True:
                 hand_string = ""
-                for card_text in player_holder.raw_hand:
-                    hand_string += " {{" + card_text + "}}"
+                for card_text in HandDetails:
+
+                    try:
+                        card_text.rank_num = invrank_alpha[card_text.rank_num]
+                    except KeyError:
+                        pass
+
+                    hand_string += " {{Card|" + str(card_text.rank_num) + "|" + str(
+                        invsuit_alpha[card_text.suit_num]) + "}}"
+
+                TarotSleeve.sort(key=lambda j: j.rank_num)
+                for card_text in TarotSleeve:
+                    hand_string += " {{Tarot|" + card_text.rank_num + "}}"
 
                 if hand_string == "":
                     hand_string = "-"
 
                 hand_print = "|-\n| " + player_holder.name + " || " \
                              + str(player_holder.chips) + " || " \
-                             + str(player_holder.misc_inv) + " || "  \
-                             + hand_string + " || "
-
-            for c in HandDetails:
-                if wiki_formatted is False:
-                    hand_print += c.rank + " " + c.suit
-                    if sort_style == 3:
-                        hand_print += " [" + c.color + "]"
-                    elif sort_style == 4:
-                        hand_print += " [" + str(c.tradition) + "]"
-                    hand_print += ", "
-                elif wiki_formatted is True:
-                    hand_print += "{{Card|"
-                    try:
-                        rank_text = invrank_alpha[c.rank_num]
-                    except KeyError:
-                        rank_text = str(c.rank_num)
-                    hand_print += rank_text + "|"
-                    try:
-                        suit_text = invsuit_alpha[c.suit_num]
-                    except KeyError:
-                        suit_text = "Error, sorry :("
-                    hand_print += suit_text + "}} "
-
-            # Adds any tarot cards at the end
-            if len(TarotSleeve) > 0:
-                if wiki_formatted is False:
-                    hand_print += "Tarot Cards: "
-                for a in TarotSleeve:
-                    if wiki_formatted is False:
-                        hand_print += "[" + a.rank + "]"
-                    elif wiki_formatted is True:
-                        hand_print += "{{Tarot|"
-                        TarotText = a.rank_num
-                        hand_print += TarotText + "}} "
+                             + str(player_holder.misc_inv) + " || " \
+                             + hand_string
 
             print(hand_print)
 
